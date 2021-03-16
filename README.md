@@ -7,7 +7,7 @@
 
 ```bash
 $ uname -a
-Linux jasonkayPC 5.4.0-58-generic #64-Ubuntu SMP Wed Dec 9 08:16:25 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux
+Linux jasonkayPC 5.4.0-58-generic
 
 $ docker version
 Client:
@@ -32,3 +32,9 @@ Client:
 
 - Github Pages：https://jasonkayzk.github.io/sharing/
 - 国内Gitee镜像：https://jasonkay.gitee.io/sharing/
+
+
+### 实验说明
+
+- 使用`mount`命令挂载后的目录，请在实验后使用`umount`命令取消挂载
+

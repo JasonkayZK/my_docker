@@ -7,8 +7,8 @@ echo "I am a container layer" >./container-layer/container-layer.txt
 mkdir image-layer1 && mkdir image-layer2 && mkdir image-layer3 && mkdir image-layer4
 echo "I am image layer1" >image-layer1/image-layer1.txt
 echo "I am image layer2" >image-layer2/image-layer2.txt
-echo "I am image layer3" >image-layer1/image-layer3.txt
-echo "I am image layer4" >image-layer1/image-layer4.txt
+echo "I am image layer3" >image-layer3/image-layer3.txt
+echo "I am image layer4" >image-layer4/image-layer4.txt
 
 tree
 #.

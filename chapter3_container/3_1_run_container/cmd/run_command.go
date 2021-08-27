@@ -15,11 +15,11 @@ var RunCommand = cli.Command{
 			my-docker run -ti [command]`,
 	Flags: []cli.Flag{
 		cli.BoolFlag{
-			Name: "ti",
+			Name:  "ti",
 			Usage: "enable tty",
 		},
 		cli.BoolFlag{
-			Name: "it",
+			Name:  "it",
 			Usage: "enable tty",
 		},
 	},
@@ -33,8 +33,6 @@ var RunCommand = cli.Command{
 		return nil
 	},
 }
-
-
 
 func run(tty bool, command string) {
 	parent := container.NewParentProcess(tty, command)

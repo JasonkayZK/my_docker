@@ -3,21 +3,22 @@
 ### 开发环境
 
 - Ubuntu 20.04
-- Golang 16.02
+- Golang 1.17
 
 ```bash
 $ uname -a
-Linux jasonkayPC 5.4.0-58-generic
+Linux jasonkay 5.4.0-81-generic #91-Ubuntu SMP Thu Jul 15 19:09:17 UTC 2021 x86_64 x86_64 x86_64 GNU/Linux
 
 $ docker version
-Client:
- Version:           19.03.8
- API version:       1.40
- Go version:        go1.13.8
- Git commit:        afacb8b7f0
- Built:             Wed Oct 14 19:43:43 2020
+Client: Docker Engine - Community
+ Version:           20.10.8
+ API version:       1.41
+ Go version:        go1.16.6
+ Git commit:        3967b7d
+ Built:             Fri Jul 30 19:54:27 2021
  OS/Arch:           linux/amd64
- Experimental:      false
+ Context:           default
+ Experimental:      true
 ```
 
 

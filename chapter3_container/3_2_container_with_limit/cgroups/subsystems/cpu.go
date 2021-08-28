@@ -2,6 +2,7 @@ package subsystems
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"my_docker/cgroups/utils"
 	"os"
@@ -28,14 +29,20 @@ func (c *CpuSubSystem) Set(cgroupPath string, res *ResourceConfig) error {
 		return err
 	}
 
+	configPath := path.Join(subsystemCgroupPath, CpuCgroupConfig)
 	// 如果存在CPU时间片的配置
 	if res.CpuShare != "" {
-		err = ioutil.WriteFile(path.Join(subsystemCgroupPath, CpuCgroupConfig),
+		err = ioutil.WriteFile(configPath,
 			[]byte(res.CpuShare), utils.DefaultCgroupConfigFilePerm)
 		if err != nil {
 			return fmt.Errorf("set cgroup cpu share fail %v", err)
 		}
 	}
+
+	log.Infof("set cpu-share success, file: %s, cpu-share: %s",
+		configPath,
+		res.CpuShare,
+	)
 	return nil
 }
 
@@ -45,11 +52,17 @@ func (c *CpuSubSystem) Apply(cgroupPath string, pid int) error {
 		return fmt.Errorf("get cgroup %s error: %v", cgroupPath, err)
 	}
 
-	err = ioutil.WriteFile(path.Join(subsystemCgroupPath, CgroupConfigPath),
+	configPath := path.Join(subsystemCgroupPath, CgroupConfigPath)
+	err = ioutil.WriteFile(configPath,
 		[]byte(strconv.Itoa(pid)), utils.DefaultCgroupConfigFilePerm)
 	if err != nil {
 		return fmt.Errorf("set cgroup proc fail %v", err)
 	}
+
+	log.Infof("apply cpu-share success, file: %s, pid: %d",
+		path.Join(subsystemCgroupPath, CgroupConfigPath),
+		pid,
+	)
 	return nil
 }
 

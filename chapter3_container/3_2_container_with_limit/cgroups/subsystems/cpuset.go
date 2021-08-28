@@ -2,6 +2,7 @@ package subsystems
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"my_docker/cgroups/utils"
 	"os"
@@ -29,13 +30,19 @@ func (c *CpuSetSubSystem) Set(cgroupPath string, res *ResourceConfig) error {
 	}
 
 	// 如果存在CPU核心数的配置
+	configPath := path.Join(subsystemCgroupPath, CpuSetCgroupConfig)
 	if res.CpuSet != "" {
-		err = ioutil.WriteFile(path.Join(subsystemCgroupPath, CpuSetCgroupConfig),
+		err = ioutil.WriteFile(configPath,
 			[]byte(res.CpuSet), utils.DefaultCgroupConfigFilePerm)
 		if err != nil {
 			return fmt.Errorf("set cgroup cpuset fail %v", err)
 		}
 	}
+
+	log.Infof("set cpu-set success, file: %s, cpu-set num: %s",
+		configPath,
+		res.CpuSet,
+	)
 	return nil
 }
 
@@ -45,11 +52,17 @@ func (c *CpuSetSubSystem) Apply(cgroupPath string, pid int) error {
 		return fmt.Errorf("get cgroup %s error: %v", cgroupPath, err)
 	}
 
-	err = ioutil.WriteFile(path.Join(subsystemCgroupPath, CgroupConfigPath),
+	configPath := path.Join(subsystemCgroupPath, CgroupConfigPath)
+	err = ioutil.WriteFile(configPath,
 		[]byte(strconv.Itoa(pid)), utils.DefaultCgroupConfigFilePerm)
 	if err != nil {
-		return fmt.Errorf("set cgroup proc fail %v", err)
+		return fmt.Errorf("set cpuset cgroup proc fail %v", err)
 	}
+
+	log.Infof("apply cpu-set success, file: %s, pid: %d",
+		path.Join(subsystemCgroupPath, CgroupConfigPath),
+		pid,
+	)
 	return nil
 }
 

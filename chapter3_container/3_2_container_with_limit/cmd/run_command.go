@@ -8,8 +8,10 @@ import (
 	"my_docker/cgroups/subsystems"
 	"my_docker/container"
 	"os"
-	"strings"
-	"syscall"
+)
+
+var (
+	defaultCgroupPath = "mydocker-cgroup"
 )
 
 var RunCommand = cli.Command{
@@ -39,82 +41,83 @@ var RunCommand = cli.Command{
 		},
 	},
 	Action: func(context *cli.Context) error {
+		// Step 1：用户初始化命令校验
 		if len(context.Args()) < 1 {
 			return fmt.Errorf("missing container command")
 		}
 
-		// 命令行参数
+		// Step 2：获取用户命令行命令
+		// Step 2.1：从Context中获取容器内初始化命令
 		var cmdArray []string
 		for _, arg := range context.Args() {
 			cmdArray = append(cmdArray, arg)
 		}
 
-		// 容器限制参数
-		resConf := &subsystems.ResourceConfig{
-			MemoryLimit: context.String("m"),
-			CpuSet:      context.String("cpuset"),
-			CpuShare:    context.String("cpushare"),
-		}
-		tty := context.Bool("ti") || context.Bool("it")
+		// Step 2.2：从Context中获取容器配置相关命令
+		tty := context.Bool("ti") || context.Bool("it") // tty参数
+		resourceConfig := getResourceConfig(context) // 容器资源限制参数
 
-		run(tty, cmdArray, resConf)
+		run(tty, cmdArray, resourceConfig)
 		return nil
 	},
 }
 
-func run(tty bool, comArray []string, res *subsystems.ResourceConfig) {
-	parent, writePipe := container.NewParentProcess(tty)
-	if parent == nil {
-		log.Errorf("New parent process error")
-		return
-	}
-
+func run(tty bool, cmdArray []string, res *subsystems.ResourceConfig) {
+	parent := container.NewParentProcess(tty, cmdArray)
 	if err := parent.Start(); err != nil {
 		log.Error(err)
 	}
 
-	// use mydocker-cgroup as cgroup name
-	cgroupManager := cgroups.NewCgroupManager("mydocker-cgroup")
+	cgroupManager := cgroups.NewCgroupManager(defaultCgroupPath)
 	defer func(cgroupManager *cgroups.CgroupManager) {
 		err := cgroupManager.Destroy()
 		if err != nil {
 			log.Error(err)
 		}
 	}(cgroupManager)
+
 	err := cgroupManager.Set(res)
 	if err != nil {
-		return
+		goto FASTEND
 	}
 	err = cgroupManager.Apply(parent.Process.Pid)
 	if err != nil {
-		return
+		goto FASTEND
 	}
-
-	sendInitCommand(comArray, writePipe)
 
 	err = parent.Wait()
 	if err != nil {
-		log.Error(err)
+		goto FASTEND
 	}
 
-	// 子进程结束后，将当前进程重新 mount 回 proc！
-	defaultMountFlags := syscall.MS_NODEV
-	err = syscall.Mount("proc", "/proc", "proc", uintptr(defaultMountFlags), "")
+FASTEND:
 	if err != nil {
 		log.Error(err)
 	}
+
 	os.Exit(-1)
 }
 
-func sendInitCommand(comArray []string, writePipe *os.File) {
-	command := strings.Join(comArray, " ")
-	log.Infof("command all is %s", command)
-	_, err := writePipe.WriteString(command)
-	if err != nil {
-		log.Error(err)
+func getResourceConfig(context *cli.Context) *subsystems.ResourceConfig {
+	var (
+		memoryLimit = `256m`
+		cpuset = `1`
+		cpuShare = `512`
+	)
+
+	if context.String("m") != "" {
+		memoryLimit = context.String("m")
 	}
-	err = writePipe.Close()
-	if err != nil {
-		log.Error(err)
+	if context.String("cpuset") != "" {
+		cpuset = context.String("cpuset")
+	}
+	if context.String("cpushare") != "" {
+		cpuShare = context.String("cpushare")
+	}
+
+	return &subsystems.ResourceConfig{
+		MemoryLimit: memoryLimit,
+		CpuSet:      cpuset,
+		CpuShare:    cpuShare,
 	}
 }

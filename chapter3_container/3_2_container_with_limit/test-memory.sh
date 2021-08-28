@@ -15,7 +15,8 @@
 # {"level":"info","msg":"find cmd absolute path /usr/bin/stress","time":"2021-08-28T18:40:05Z"}
 # stress: info: [1] dispatching hogs: 0 cpu, 0 io, 1 vm, 0 hdd
 
-htop
+# 宿主机执行
+top
 # top - 18:41:03 up  2:25,  2 users,  load average: 0.83, 0.37, 0.30
 # Tasks: 258 total,   2 running, 256 sleeping,   0 stopped,   0 zombie
 # %Cpu(s):  1.4 us, 10.2 sy,  0.0 ni, 86.3 id,  2.0 wa,  0.0 hi,  0.2 si,  0.0 st

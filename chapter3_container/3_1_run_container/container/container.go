@@ -26,12 +26,19 @@ func NewParentProcess(tty bool, command string) *exec.Cmd {
 
 // RunContainerInitProcess 在容器中创建初始化进程！（本函数在容器内部，作为第一个进程被执行）
 func RunContainerInitProcess(command string, args []string) error {
+	// systemd 加入linux之后, mount namespace 就变成 shared by default, 所以你必须显式声明你要这个新的mount namespace独立！
+	// Issue：https://github.com/xianlubird/mydocker/issues/41
+	err := syscall.Mount("", "/", "", syscall.MS_PRIVATE|syscall.MS_REC, "")
+	if err != nil {
+		return err
+	}
+
 	// 使用 mount 挂载 proc 文件系统（以便后面通过 ps 命令查看当前进程资源）
 	// MS_NOEXEC：本文件系统不允许运行其他程序
 	// MS_NOSUID：本系统运行程序时，不允许 set-user-id, set-group-id
 	// MS_NODEV：mount系统的默认参数
 	defaultMountFlags := syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV
-	err := syscall.Mount("proc", "/proc", "proc", uintptr(defaultMountFlags), "")
+	err = syscall.Mount("proc", "/proc", "proc", uintptr(defaultMountFlags), "")
 	if err != nil {
 		return err
 	}

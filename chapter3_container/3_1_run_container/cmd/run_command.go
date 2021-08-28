@@ -6,7 +6,6 @@ import (
 	"github.com/urfave/cli"
 	"my_docker/container"
 	"os"
-	"syscall"
 )
 
 var RunCommand = cli.Command{
@@ -44,11 +43,5 @@ func run(tty bool, command string) {
 		log.Error(err)
 	}
 
-	// 子进程结束后，将当前进程重新 mount 回 proc！
-	defaultMountFlags := syscall.MS_NODEV
-	err = syscall.Mount("proc", "/proc", "proc", uintptr(defaultMountFlags), "")
-	if err != nil {
-		log.Error(err)
-	}
 	os.Exit(-1)
 }

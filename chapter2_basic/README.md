@@ -568,6 +568,16 @@ $
 
 ## **Cgroups**
 
+Namespace用来隔离自己单独的空间，而Cgroups（Control Groups）用来限制每个空间的硬件资源，如：CPU、内存等；
+
+ 
+
+
+
+
+
+
+
 
 
 

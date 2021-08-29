@@ -365,7 +365,7 @@ root           6       1  0 20:40 pts/1    00:00:00 ps -ef
 
 >   **Docker Volumn也是利用了这个特性！**
 
->   <red>**注：试验结束后，需要在容器中执行`umount /proc`取消挂载，否则会影响到外部挂载！**</font>
+>   <font color="#f00">**注：试验结束后，需要在容器中执行`umount /proc`取消挂载，否则会影响到外部挂载！**</font>
 >
 >   **（这是受`systemd`影响的！后面会介绍如何避免受影响！）**
 >
@@ -712,7 +712,7 @@ release_agent 则是一个路径，通常用作进程退出之后自动清理掉
 
 tasks 标识该 cgroup 下面的进程 ID：
 
-<red>**如果把一个进程 ID 写到 tasks 文件中，便会将相应的进程加入到这个 cgroup 中！**</font>
+<font color="#f00">**如果把一个进程 ID 写到 tasks 文件中，便会将相应的进程加入到这个 cgroup 中！**</font>
 
 <br/>
 
@@ -754,15 +754,15 @@ root@jasonkay:~/cgroup-test# tree
 
 可以看到：
 
-<red>**在一个 cgroup 的目录下创建子目录时，内核会将该目录直接标记为这个cgroup的子目录，并继承父 cgroup 的属性！**</font>
+<font color="#f00">**在一个 cgroup 的目录下创建子目录时，内核会将该目录直接标记为这个cgroup的子目录，并继承父 cgroup 的属性！**</font>
 
 <br/>
 
 #### **在cgroup中添加和移动进程**
 
-<red>**一个进程在一个Cgroups的hierarchy中，只能在一个cgroup节点上存在，系统进程都会默认在根节点上存在！**</font>
+<font color="#f00">**一个进程在一个Cgroups的hierarchy中，只能在一个cgroup节点上存在，系统进程都会默认在根节点上存在！**</font>
 
-<red>**可以将进程移动到其他cgroup节点，只需要将进程的PID写入到对应cgroup节点的task文件即可！**</font>
+<font color="#f00">**可以将进程移动到其他cgroup节点，只需要将进程的PID写入到对应cgroup节点的task文件即可！**</font>
 
 例如：
 
@@ -813,7 +813,7 @@ cat tasks
 
 上面在创建hierarchy时，并没有关联到任何的subsystem，因此没办法通过该hierarchy中的cgroup对进程的资源进行限制；
 
->   <red>**注：系统默认已经为每个subsystem创建了默认的hierarchy；**</font>
+>   <font color="#f00">**注：系统默认已经为每个subsystem创建了默认的hierarchy；**</font>
 >
 >   例如：memory的hierarchy：
 >
@@ -949,7 +949,7 @@ root@jasonkay:/sys/fs/cgroup/memory/docker/0bf66ace3af2a1cd57e7a8a12bbf33940ba63
 
 可以看到，Docker通过为每个容器创建cgroup来配置资源限制和资源监控！
 
->   <red>**注：试验结束别忘了关闭容器！**</font>
+>   <font color="#f00">**注：试验结束别忘了关闭容器！**</font>
 
 <br/>
 
@@ -1192,9 +1192,9 @@ tree mnt/
 #0 directories, 5 files
 ```
 
->   <red>**注：在`mount aufs`命令中，没有指定待挂载的 5 个目录的权限；**</font>
+>   <font color="#f00">**注：在`mount aufs`命令中，没有指定待挂载的 5 个目录的权限；**</font>
 >
->   <red>**则默认情况下的行为是：dirs 指定的左边起第一个目录是 `read-write` 权限, 后续的都是 `read-only` 权限！**</font>
+>   <font color="#f00">**则默认情况下的行为是：dirs 指定的左边起第一个目录是 `read-write` 权限, 后续的都是 `read-only` 权限！**</font>
 
 确认新 mount 的文件系统中，每个目录的权限：
 

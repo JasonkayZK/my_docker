@@ -23,7 +23,7 @@ Kernel中的一个功能，便于隔离一系列的系统资源，如：
 
 例如下图：
 
-![](./images/namespace-1.png)
+![](https://cdn.jsdelivr.net/gh/jasonkayzk/my_docker@master/chapter2_basic/images/namespace-1.png)
 
 A和B空间均存在PID为1的init进程，子命名空间的进程映射至父命名空间的进程上；
 

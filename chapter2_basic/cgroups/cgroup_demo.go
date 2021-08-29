@@ -11,6 +11,7 @@ import (
 )
 
 const (
+	// 挂载了memory subsystem的hierarchy的根目录位置
 	cgroupMemoryHierarchyMount = "/sys/fs/cgroup/memory"
 )
 

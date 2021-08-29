@@ -45,7 +45,7 @@ tree
 pwd # /home/jasonkay/workspace/cgroup-test/cgroup-1
 echo $$ # 16141
 sudo sh -c "echo $$ >> tasks" # 将所在终端检测移动至cgroup-1中
-cat /procs/16141/cgroup
+cat /proc/16141/cgroup
 #13:name=cgroup-test:/cgroup-1
 #12:net_cls,net_prio:/
 #11:memory:/test-limit-memory
@@ -81,3 +81,34 @@ sudo sh -c "echo $$ > tasks"
 stress --vm-bytes 200m --vm-keep -m 1 &
 # 输入top，并查看stress内存占用 /stress 此时为100M了
 
+################### **注1：试验结束后，将stress进程kill掉！** ###################
+kill -9 pid
+
+################### **注2：试验结束后，将目录umount：** ###################
+
+# 查看挂载情况：
+root@jasonkay:~# mount
+# sysfs on /sys type sysfs (rw,nosuid,nodev,noexec,relatime)
+# ……
+# cgroup-test on /root/cgroup-test type cgroup (rw,relatime,name=cgroup-test)
+
+# 取消挂载：
+root@jasonkay:~# umount ./cgroup-test
+
+# 再次查看挂载情况：
+root@jasonkay:~# mount
+# sysfs on /sys type sysfs (rw,nosuid,nodev,noexec,relatime)
+# …… # 已不存在cgroup-test
+
+################### **注3：清除内存限制配置：** ###################
+
+# 我们将当前进程加入了`test-limit-memory`中，因此，在删除这个目录之前，需要将当前进程重新加入至其他hierarchy中：
+
+# 切换到默认内存限制hierarchy
+cd /sys/fs/cgroup/memory/
+
+# 将当前进程放入默认内存限制tasks
+echo $$ >> tasks
+
+# 删除目录（它会将这个目录下的全部文件也都删除！）
+rmdir test-limit-memory/

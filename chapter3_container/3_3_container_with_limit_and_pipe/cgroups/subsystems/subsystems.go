@@ -15,6 +15,7 @@ type ResourceConfig struct {
 	MemoryLimit string // 内存限制
 	CpuShare    string // CPU时间片权重
 	CpuSet      string // CPU核心数
+	CpuMems     string
 }
 
 // Subsystem Subsystem接口

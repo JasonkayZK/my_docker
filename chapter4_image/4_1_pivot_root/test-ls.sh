@@ -1,3 +1,12 @@
+############################## Test 0：导出Busybox官方镜像内容到压缩包 ##############################
+# 使用busybox创建镜像
+docker run -d busybox:1.34.0 top -b
+# 输出：
+# 95ef3a4e910428c37fd739d76ee5e68c1771508704f17a319d0e420bcbdfd40b
+
+# 导出压缩包
+docker export -o busybox.tar 95ef3a4e9104 # 容器Id
+
 # 解压缩
 mkdir -p /root/my-docker/busybox && tar -xvf /root/my-docker/busybox.tar -C /root/my-docker/busybox/
 

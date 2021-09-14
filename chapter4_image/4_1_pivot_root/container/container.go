@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	workDir = `/root/busybox`
+	workDir = `/root/my-docker/busybox`
 )
 
 func NewParentProcess(tty bool) (*exec.Cmd, *os.File) {

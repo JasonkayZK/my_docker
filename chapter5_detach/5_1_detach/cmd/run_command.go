@@ -44,6 +44,10 @@ var RunCommand = cli.Command{
 			Name:  "v",
 			Usage: "volume",
 		},
+		cli.BoolFlag{
+			Name: "d",
+			Usage: "detach container",
+		},
 	},
 	Action: func(context *cli.Context) error {
 		// Step 1：用户初始化命令校验
@@ -60,6 +64,14 @@ var RunCommand = cli.Command{
 
 		// Step 2.2：从Context中获取容器配置相关命令
 		tty := context.Bool("ti") || context.Bool("it") // tty参数
+		detach := context.Bool("d") // detach参数
+
+		// 如果存在 detach，则
+		if tty && detach {
+			log.Infof("tty & detach both true, tty will be ignored!")
+			tty = false
+		}
+
 		resourceConfig := getResourceConfig(context)    // 容器资源限制参数
 
 		volume := context.String("v")
@@ -106,7 +118,13 @@ func run(tty bool, comArray []string, res *subsystems.ResourceConfig, volumeUrls
 	}
 
 	sendInitCommand(comArray, writePipe)
-	err = parent.Wait()
+
+	if tty {
+		err = parent.Wait()
+		if err != nil {
+			log.Errorf("wait parent process err: %v", err)
+		}
+	}
 
 	// 退出容器后，删除AUFS文件
 	err = container.DeleteWorkspace(container.RootUrl, container.MntUrl, volumeUrls)

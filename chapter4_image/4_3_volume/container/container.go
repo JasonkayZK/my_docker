@@ -21,7 +21,7 @@ var (
 	WriteLayerName = "writeLayer"
 )
 
-func NewParentProcess(tty bool) (*exec.Cmd, *os.File) {
+func NewParentProcess(tty bool, volumeUrls []string) (*exec.Cmd, *os.File) {
 	readPipe, writePipe, err := utils.NewPipe()
 	if err != nil {
 		log.Errorf("New pipe error %v", err)
@@ -44,7 +44,7 @@ func NewParentProcess(tty bool) (*exec.Cmd, *os.File) {
 	cmd.ExtraFiles = []*os.File{readPipe}
 
 	// 创建挂载的工作目录
-	err = NewWorkSpace(RootUrl, MntUrl)
+	err = NewWorkSpace(RootUrl, MntUrl, volumeUrls)
 	if err != nil {
 		return nil, nil
 	}
@@ -88,7 +88,7 @@ func RunContainerInitProcess() error {
 }
 
 // NewWorkSpace 在宿主机创建容器中对应的AUFS工作目录【Root Workspace】
-func NewWorkSpace(rootUrl, mntUrl string) error {
+func NewWorkSpace(rootUrl, mntUrl string, volumeUrls []string) error {
 	// 创建AUFS只读层【镜像文件】
 	err := createReadOnlyLayer(rootUrl)
 	if err != nil {
@@ -107,6 +107,40 @@ func NewWorkSpace(rootUrl, mntUrl string) error {
 		return err
 	}
 
+	// 挂载用户指定Volume
+	if len(volumeUrls) > 0 {
+		err = mountVolume(mntUrl, volumeUrls)
+		if err != nil {
+			return err
+		}
+		log.Infof("mount user volume at: %s, volume pair: %v", mntUrl, volumeUrls)
+	}
+
+	return nil
+}
+
+// 挂载用户指定Volume映射到AUFS系统
+func mountVolume(mntUrl string, volumeUrls []string) error {
+	parentUrl, containerUrl := volumeUrls[0], volumeUrls[1]
+	if err := os.Mkdir(parentUrl, 0777); err != nil {
+		log.Errorf("mkdir parent dir %s err: %v", parentUrl, err)
+	}
+
+	containerVolumeUrl := mntUrl + containerUrl
+	if err := os.Mkdir(containerVolumeUrl, 0777); err != nil {
+		log.Errorf("mkdir container dir %s err: %v", containerVolumeUrl, err)
+		return err
+	}
+
+	dirs := "dirs=" + parentUrl
+	cmd := exec.Command("mount", "-t", "aufs", "-o", dirs, "none", containerVolumeUrl)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		log.Errorf("mount volume failed. %v", err)
+		return err
+	}
 	return nil
 }
 
@@ -148,7 +182,7 @@ func createWriteLayer(rootUrl string) error {
 func createMountPoint(rootUrl, mntUrl string) error {
 	// 创建挂载点目录
 	if err := os.Mkdir(mntUrl, 0777); err != nil {
-		log.Errorf("Mkdir dir %s error. %v", mntUrl, err)
+		log.Errorf("mkdir dir %s error. %v", mntUrl, err)
 	}
 
 	// 通过mount命令挂载
@@ -166,8 +200,10 @@ func createMountPoint(rootUrl, mntUrl string) error {
 }
 
 // DeleteWorkspace 退出容器后，删除AUFS工作目录
-func DeleteWorkspace(rootUrl, mntUrl string) error {
-	err := deleteMountPoint(mntUrl)
+func DeleteWorkspace(rootUrl, mntUrl string, volumeUrls []string) error {
+
+	// 删除用户挂载Volume
+	err := deleteMountPointWithVolume(mntUrl, volumeUrls)
 	if err != nil {
 		return err
 	}
@@ -180,19 +216,36 @@ func DeleteWorkspace(rootUrl, mntUrl string) error {
 	return nil
 }
 
-// 删除写入层挂载点
-func deleteMountPoint(mntUrl string) error {
+// 取消挂载volume映射
+func deleteMountPointWithVolume(mntUrl string, volumeUrls []string) error {
+	// 取消挂载用户自定义容器AUFS
+	if len(volumeUrls) > 0 {
+		containerUrl := mntUrl + volumeUrls[1]
+		cmd := exec.Command("umount", containerUrl)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			log.Errorf("umount volume failed. %v", err)
+			return err
+		}
+	}
+
+	// 取消挂载点
 	cmd := exec.Command("umount", mntUrl)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		log.Errorf("%v", err)
-	}
-	if err := os.RemoveAll(mntUrl); err != nil {
-		log.Errorf("remove dir %s error %v", mntUrl, err)
+		log.Errorf("umount mountpoint failed. %v", err)
+		return err
 	}
 
-	log.Infof("remove mount point success: %s", mntUrl)
+	// 删除映射文件
+	if err := os.RemoveAll(mntUrl); err != nil {
+		log.Errorf("remove mountpoint dir %s error %v", mntUrl, err)
+		return err
+	}
+
+	log.Infof("remove mount point with volume success: %s", mntUrl)
 
 	return nil
 }

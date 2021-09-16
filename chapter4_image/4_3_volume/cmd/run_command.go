@@ -40,6 +40,10 @@ var RunCommand = cli.Command{
 			Name:  "cpuset",
 			Usage: "cpuset limit",
 		},
+		cli.StringFlag{
+			Name:  "v",
+			Usage: "volume",
+		},
 	},
 	Action: func(context *cli.Context) error {
 		// Step 1：用户初始化命令校验
@@ -58,13 +62,23 @@ var RunCommand = cli.Command{
 		tty := context.Bool("ti") || context.Bool("it") // tty参数
 		resourceConfig := getResourceConfig(context)    // 容器资源限制参数
 
-		run(tty, cmdArray, resourceConfig)
+		volume := context.String("v")
+		var volumeUrls []string
+		if volume != "" {
+			volumeUrls = volumeUrlExtract(volume)
+			if len(volumeUrls) != 2 || volumeUrls[0] == "" || volumeUrls[1] == "" {
+				log.Infof("volume parameter input is incorrect")
+				return fmt.Errorf("volume parameter input is incorrect, volume: %s", volume)
+			}
+		}
+
+		run(tty, cmdArray, resourceConfig, volumeUrls)
 		return nil
 	},
 }
 
-func run(tty bool, comArray []string, res *subsystems.ResourceConfig) {
-	parent, writePipe := container.NewParentProcess(tty)
+func run(tty bool, comArray []string, res *subsystems.ResourceConfig, volumeUrls []string) {
+	parent, writePipe := container.NewParentProcess(tty, volumeUrls)
 	if parent == nil {
 		log.Errorf("New parent process error")
 		return
@@ -95,7 +109,7 @@ func run(tty bool, comArray []string, res *subsystems.ResourceConfig) {
 	err = parent.Wait()
 
 	// 退出容器后，删除AUFS文件
-	err = container.DeleteWorkspace(container.RootUrl, container.MntUrl)
+	err = container.DeleteWorkspace(container.RootUrl, container.MntUrl, volumeUrls)
 	if err != nil {
 		goto FASTEND
 	}
@@ -148,4 +162,14 @@ func sendInitCommand(comArray []string, writePipe *os.File) {
 		log.Errorf("write pipe err: %v", err)
 		return
 	}
+}
+
+// 抽取用户的Volume映射
+func volumeUrlExtract(volume string) []string {
+	var volumeUrls []string
+	volumeUrls = strings.Split(volume, ":")
+	for idx, volumeUrl := range volumeUrls {
+		volumeUrls[idx] = strings.TrimSpace(volumeUrl)
+	}
+	return volumeUrls
 }

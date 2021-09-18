@@ -107,7 +107,7 @@ func run(tty bool, comArray []string, res *subsystems.ResourceConfig, volumeUrls
 	}
 
 	// 记录容器信息
-	containerId, err := container.RecordContainerInfo(parent.Process.Pid, comArray, res, volumeUrls, containerName)
+	containerName, err = container.RecordContainerInfo(parent.Process.Pid, comArray, res, volumeUrls, containerName)
 	if err != nil {
 		log.Errorf("record container info err: %v", err)
 		return
@@ -139,7 +139,7 @@ func run(tty bool, comArray []string, res *subsystems.ResourceConfig, volumeUrls
 		if err != nil {
 			log.Errorf("wait parent process err: %v", err)
 		}
-		err = container.DeleteContainerInfo(containerId)
+		err = container.DeleteContainerInfo(containerName)
 		if err != nil {
 			return
 		}

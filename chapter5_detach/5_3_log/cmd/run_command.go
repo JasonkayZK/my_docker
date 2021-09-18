@@ -7,6 +7,7 @@ import (
 	"my_docker/cgroups"
 	"my_docker/cgroups/subsystems"
 	"my_docker/container"
+	"my_docker/utils"
 	"os"
 	"strings"
 )
@@ -96,7 +97,13 @@ var RunCommand = cli.Command{
 
 func run(tty bool, comArray []string, res *subsystems.ResourceConfig, volumeUrls []string, containerName string) {
 
-	parent, writePipe := container.NewParentProcess(tty, volumeUrls)
+	// 生成容器Id
+	containerId := utils.RandStringBytes(container.ContainerIdLength)
+	if containerName == "" {
+		containerName = containerId
+	}
+
+	parent, writePipe := container.NewParentProcess(tty, volumeUrls, containerName)
 	if parent == nil {
 		log.Errorf("New parent process error")
 		return
@@ -107,7 +114,7 @@ func run(tty bool, comArray []string, res *subsystems.ResourceConfig, volumeUrls
 	}
 
 	// 记录容器信息
-	containerId, err := container.RecordContainerInfo(parent.Process.Pid, comArray, res, volumeUrls, containerName)
+	containerName, err = container.RecordContainerInfo(parent.Process.Pid, comArray, res, volumeUrls, containerId, containerName)
 	if err != nil {
 		log.Errorf("record container info err: %v", err)
 		return
@@ -139,7 +146,7 @@ func run(tty bool, comArray []string, res *subsystems.ResourceConfig, volumeUrls
 		if err != nil {
 			log.Errorf("wait parent process err: %v", err)
 		}
-		err = container.DeleteContainerInfo(containerId)
+		err = container.DeleteContainerInfo(containerName)
 		if err != nil {
 			return
 		}

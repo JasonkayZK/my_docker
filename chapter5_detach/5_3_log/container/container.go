@@ -21,7 +21,7 @@ var (
 	WriteLayerName = "writeLayer"
 )
 
-func NewParentProcess(tty bool, volumeUrls []string) (*exec.Cmd, *os.File) {
+func NewParentProcess(tty bool, volumeUrls []string, containerName string) (*exec.Cmd, *os.File) {
 	readPipe, writePipe, err := utils.NewPipe()
 	if err != nil {
 		log.Errorf("New pipe error %v", err)
@@ -39,6 +39,20 @@ func NewParentProcess(tty bool, volumeUrls []string) (*exec.Cmd, *os.File) {
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
+	} else { // 非TTY，则记录日志
+		dirURL := fmt.Sprintf(DefaultInfoLocation, containerName)
+		if err = os.MkdirAll(dirURL, DefaultFilePerm); err != nil {
+			log.Errorf("NewParentProcess mkdir %s error %v", dirURL, err)
+			return nil, nil
+		}
+		stdLogFilePath := dirURL + ContainerLogFile
+		stdLogFile, err := os.Create(stdLogFilePath)
+		if err != nil {
+			log.Errorf("NewParentProcess create file %s error %v", stdLogFilePath, err)
+			return nil, nil
+		}
+		// 文件赋值给输出流！
+		cmd.Stdout = stdLogFile
 	}
 
 	cmd.ExtraFiles = []*os.File{readPipe}

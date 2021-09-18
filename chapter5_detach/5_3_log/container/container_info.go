@@ -23,9 +23,10 @@ var (
 
 	DefaultInfoLocation = "/var/run/my-docker/%s/"
 	ConfigName          = "config.json"
+	ContainerLogFile    = "container.log"
 
-	ContainerIdLength                 = 16
-	DefaultConfigFilePerm fs.FileMode = 0622
+	ContainerIdLength             = 16
+	DefaultFilePerm   fs.FileMode = 0622
 )
 
 type CGroupsInfo struct {
@@ -47,17 +48,16 @@ type ContainerInfo struct {
 
 // RecordContainerInfo 向文件中记录容器信息
 func RecordContainerInfo(containerPID int, commandArray []string, res *subsystems.ResourceConfig, volumeUrls []string,
-	containerName string) (string, error) {
+	containerId, containerName string) (string, error) {
 
-	id := utils.RandStringBytes(ContainerIdLength)
 	createTime := time.Now().Format(utils.DateFormat)
 	commands := strings.Join(commandArray, " ")
 	if containerName == "" {
-		containerName = id
+		containerName = containerId
 	}
 
 	containerInfo := &ContainerInfo{
-		Id:          id,
+		Id:          containerId,
 		Pid:         strconv.Itoa(containerPID),
 		Command:     commands,
 		CreatedTime: createTime,
@@ -80,7 +80,7 @@ func RecordContainerInfo(containerPID int, commandArray []string, res *subsystem
 	}
 
 	dirUrl := fmt.Sprintf(DefaultInfoLocation, containerName)
-	if err := os.MkdirAll(dirUrl, DefaultConfigFilePerm); err != nil {
+	if err := os.MkdirAll(dirUrl, DefaultFilePerm); err != nil {
 		log.Errorf("Mkdir error %s error %v", dirUrl, err)
 		return "", err
 	}

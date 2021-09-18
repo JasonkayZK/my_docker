@@ -45,7 +45,7 @@ var RunCommand = cli.Command{
 			Usage: "volume",
 		},
 		cli.BoolFlag{
-			Name: "d",
+			Name:  "d",
 			Usage: "detach container",
 		},
 		cli.StringFlag{
@@ -68,15 +68,16 @@ var RunCommand = cli.Command{
 
 		// Step 2.2：从Context中获取容器配置相关命令
 		tty := context.Bool("ti") || context.Bool("it") // tty参数
-		detach := context.Bool("d") // detach参数
+		detach := context.Bool("d")                     // detach参数
+		containerName := context.String("name")         // 容器名称
 
-		// 如果存在 detach，则
+		// 如果存在 detach，则忽略tty
 		if tty && detach {
 			log.Infof("tty & detach both true, tty will be ignored!")
 			tty = false
 		}
 
-		resourceConfig := getResourceConfig(context)    // 容器资源限制参数
+		resourceConfig := getResourceConfig(context) // 容器资源限制参数
 
 		volume := context.String("v")
 		var volumeUrls []string
@@ -88,12 +89,13 @@ var RunCommand = cli.Command{
 			}
 		}
 
-		run(tty, cmdArray, resourceConfig, volumeUrls)
+		run(tty, cmdArray, resourceConfig, volumeUrls, containerName)
 		return nil
 	},
 }
 
-func run(tty bool, comArray []string, res *subsystems.ResourceConfig, volumeUrls []string) {
+func run(tty bool, comArray []string, res *subsystems.ResourceConfig, volumeUrls []string, containerName string) {
+
 	parent, writePipe := container.NewParentProcess(tty, volumeUrls)
 	if parent == nil {
 		log.Errorf("New parent process error")
@@ -102,6 +104,13 @@ func run(tty bool, comArray []string, res *subsystems.ResourceConfig, volumeUrls
 	err := parent.Start()
 	if err != nil {
 		log.Error(err)
+	}
+
+	// 记录容器信息
+	containerId, err := container.RecordContainerInfo(parent.Process.Pid, comArray, res, volumeUrls, containerName)
+	if err != nil {
+		log.Errorf("record container info err: %v", err)
+		return
 	}
 
 	cgroupManager := cgroups.NewCgroupManager(defaultCgroupPath)
@@ -114,11 +123,13 @@ func run(tty bool, comArray []string, res *subsystems.ResourceConfig, volumeUrls
 
 	err = cgroupManager.Set(res)
 	if err != nil {
-		goto FASTEND
+		log.Errorf("set cgroup err: %v", err)
+		return
 	}
 	err = cgroupManager.Apply(parent.Process.Pid)
 	if err != nil {
-		goto FASTEND
+		log.Errorf("apply cgroup err: %v", err)
+		return
 	}
 
 	sendInitCommand(comArray, writePipe)
@@ -128,19 +139,17 @@ func run(tty bool, comArray []string, res *subsystems.ResourceConfig, volumeUrls
 		if err != nil {
 			log.Errorf("wait parent process err: %v", err)
 		}
+		err = container.DeleteContainerInfo(containerId)
+		if err != nil {
+			return
+		}
 	}
 
 	// 退出容器后，删除AUFS文件
 	err = container.DeleteWorkspace(container.RootUrl, container.MntUrl, volumeUrls)
 	if err != nil {
-		goto FASTEND
-	}
-
-FASTEND:
-	if err != nil {
 		log.Error(err)
 	}
-
 	os.Exit(0)
 }
 

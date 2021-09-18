@@ -20,6 +20,7 @@ func main() {
 		cmd.InitCommand,
 		cmd.RunCommand,
 		cmd.CommitCommand,
+		cmd.ListCommand,
 	}
 
 	app.Before = func(context *cli.Context) error {

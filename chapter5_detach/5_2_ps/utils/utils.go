@@ -6,6 +6,10 @@ import (
 	"time"
 )
 
+const (
+	DateFormat = "2006-01-02 15:04:05"
+)
+
 // NewPipe 创建进程间的一个无名管道
 func NewPipe() (*os.File, *os.File, error) {
 	read, write, err := os.Pipe()
